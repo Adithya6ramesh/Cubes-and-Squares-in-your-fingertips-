@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Detection Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .camera-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .camera-container {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            display: block;
+        }
+
+        .processed-frame {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .calculator-section {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .calculator-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .result-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .current-status {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .message {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ffeaa7;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #b8860b;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖐️ Hand Detection Calculator</h1>
+            <p>Use hand gestures to input numbers and calculate squares & cubes</p>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <ul>
+                <li>🖐️ <strong>Show fingers (1-5):</strong> Hold for 2 seconds to input a digit</li>
+                <li>✊ <strong>Make a fist:</strong> Clear the current number</li>
+                <li>✏️ <strong>Manual input:</strong> Type numbers directly in the input field</li>
+                <li>🧹 <strong>Clear button:</strong> Reset all calculations</li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="camera-section">
+                <div class="camera-container">
+                    <video id="videoElement" autoplay muted playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                </div>
+                
+                <div class="camera-controls">
+                    <button id="startCamera" class="btn btn-primary">Start Camera</button>
+                    <button id="stopCamera" class="btn btn-secondary" disabled>Stop Camera</button>
+                </div>
+
+                <div id="processedFrame" style="margin-top: 20px; display: none;">
+                    <img id="processedImage" class="processed-frame" alt="Processed frame">
+                </div>
+            </div>
+
+            <div class="calculator-section">
+                <h2>Calculator</h2>
+                
+                <div class="current-status">
+                    <div class="status-item">
+                        <span class="status-label">Current Fingers:</span>
+                        <span class="status-value" id="currentFingers">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Entered Number:</span>
+                        <span class="status-value" id="enteredNumber">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span class="status-value" id="statusMessage">Ready</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="numberInput">Enter Number:</label>
+                    <input type="number" id="numberInput" class="input-field" placeholder="Enter a number" min="0">
+                </div>
+
+                <div class="input-group">
+                    <button id="calculateBtn" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">Calculate</button>
+                    <button id="clearBtn" class="btn btn-secondary" style="width: 100%;">Clear</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="squareResult">Square:</label>
+                    <input type="text" id="squareResult" class="input-field result-display" readonly placeholder="Square will appear here">
+                </div>
+
+                <div class="input-group">
+                    <label for="cubeResult">Cube:</label>
+                    <input type="text" id="cubeResult" class="input-field result-display" readonly placeholder="Cube will appear here">
+                </div>
+
+                <div id="messageDiv" class="message" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let video, canvas, ctx;
+        let isProcessing = false;
+        let processingInterval;
+
+        // DOM elements
+        const startCameraBtn = document.getElementById('startCamera');
+        const stopCameraBtn = document.getElementById('stopCamera');
+        const numberInput = document.getElementById('numberInput');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const squareResult = document.getElementById('squareResult');
+        const cubeResult = document.getElementById('cubeResult');
+        const messageDiv = document.getElementById('messageDiv');
+        const currentFingers = document.getElementById('currentFingers');
+        const enteredNumber = document.getElementById('enteredNumber');
+        const statusMessage = document.getElementById('statusMessage');
+        const processedFrame = document.getElementById('processedFrame');
+        const processedImage = document.getElementById('processedImage');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            video = document.getElementById('videoElement');
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            startCameraBtn.addEventListener('click', startCamera);
+            stopCameraBtn.addEventListener('click', stopCamera);
+            calculateBtn.addEventListener('click', calculateManually);
+            clearBtn.addEventListener('click', clearAll);
+            
+            numberInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    calculateManually();
+                }
+            });
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 }
+                });
+                
+                video.srcObject = stream;
+                video.onloadedmetadata = function() {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    startProcessing();
+                };
+                
+                startCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+                showMessage('Camera started successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showMessage('Error accessing camera: ' + error.message, 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            stopProcessing();
+            startCameraBtn.disabled = false;
+            stopCameraBtn.disabled = true;
+            processedFrame.style.display = 'none';
+            showMessage('Camera stopped', 'info');
+        }
+
+        function startProcessing() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            processingInterval = setInterval(processFrame, 200); // Process every 200ms
+        }
+
+        function stopProcessing() {
+            isProcessing = false;
+            if (processingInterval) {
+                clearInterval(processingInterval);
+            }
+        }
+
+        async function processFrame() {
+            if (!video.videoWidth || !video.videoHeight) return;
+            
+            try {
+                // Draw video frame to canvas
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to base64
+                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Send to backend
+                const response = await fetch('/api/process_frame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateUI(data);
+                    
+                    // Show processed frame
+                    if (data.processed_image) {
+                        processedImage.src = data.processed_image;
+                        processedFrame.style.display = 'block';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error processing frame:', error);
+            }
+        }
+
+        function updateUI(data) {
+            currentFingers.textContent = data.current_fingers || 0;
+            enteredNumber.textContent = data.entered_number || '-';
+            statusMessage.textContent = data.message || 'Ready';
+            
+            if (data.square !== undefined) {
+                squareResult.value = data.square;
+            }
+            
+            if (data.cube !== undefined) {
+                cubeResult.value = data.cube;
+            }
+            
+            if (data.entered_number) {
+                numberInput.value = data.entered_number;
+            }
+        }
+
+        async function calculateManually() {
+            const number = parseInt(numberInput.value);
+            
+            if (isNaN(number) || number < 0) {
+                showMessage('Please enter a valid positive number', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ number: number })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    squareResult.value = data.square;
+                    cubeResult.value = data.cube;
+                    enteredNumber.textContent = data.number;
+                    showMessage('Calculation completed!', 'success');
+                } else {
+                    showMessage('Error calculating values', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error calculating values', 'error');
+            }
+        }
+
+        async function clearAll() {
+            try {
+                const response = await fetch('/api/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    numberInput.value = '';
+                    squareResult.value = '';
+                    cubeResult.value = '';
+                    enteredNumber.textContent = '-';
+                    currentFingers.textContent = '0';
+                    statusMessage.textContent = 'Cleared';
+                    showMessage('All values cleared!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error clearing values', 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Update status periodically
+        setInterval(async () => {
+            if (!isProcessing) return;
+            
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateUI(data);
+                }
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }, 1000);
+    </script>
+</body>
+</html> 
