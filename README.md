@@ -1,5 +1,5 @@
 # Hand Gesture Controlled Number Input and Calculation
-cubes-and-squares-in-your-fingertip.vercel.app
+
 
 
 This Python script uses OpenCV and MediaPipe to detect hand gestures from a webcam feed, allowing users to input numbers and see their squares and cubes calculated in real-time.
